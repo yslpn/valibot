@@ -2,9 +2,10 @@
 
 All notable changes to the library will be documented in this file.
 
-## vX.X.X (Month DD, YYYY)
+## v1.2.0 (May 05, 2026)
 
 - Add Uzbek (uz) translations (pull request #1452)
+- Change Valibot peer dependency to `^1.4.0`
 
 ## v1.1.0 (March 17, 2026)
 
