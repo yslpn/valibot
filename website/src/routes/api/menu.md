@@ -83,6 +83,7 @@
 ## Actions
 
 - [args](/api/args/)
+- [anyOf](/api/anyOf/)
 - [base64](/api/base64/)
 - [bic](/api/bic/)
 - [brand](/api/brand/)
@@ -282,6 +283,9 @@
 
 ## Types
 
+- [AnyOfAction](/api/AnyOfAction/)
+- [AnyOfIssue](/api/AnyOfIssue/)
+- [AnyOfOptions](/api/AnyOfOptions/)
 - [AnySchema](/api/AnySchema/)
 - [ArgsAction](/api/ArgsAction/)
 - [ArgsActionAsync](/api/ArgsActionAsync/)
