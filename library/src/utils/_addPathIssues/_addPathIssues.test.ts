@@ -71,6 +71,32 @@ describe('_addPathIssues', () => {
     } satisfies PartialDataset<Record<string, unknown>, BaseIssue<unknown>>);
   });
 
+  test('should replace issue path in replace mode', () => {
+    const dataset: SuccessDataset<Record<string, unknown>> = {
+      typed: true,
+      value: {},
+    };
+    const nestedPathItem = {
+      type: 'array',
+      origin: 'value',
+      input: [123],
+      key: 0,
+      value: 123,
+    } as const;
+    const issue: BaseIssue<unknown> = {
+      ...baseInfo,
+      path: [nestedPathItem],
+    };
+
+    _addPathIssues(dataset, pathItem, [issue], 'replace');
+
+    expect(dataset).toStrictEqual({
+      typed: true,
+      value: {},
+      issues: [{ ...baseInfo, path: [pathItem] }],
+    } satisfies PartialDataset<Record<string, unknown>, BaseIssue<unknown>>);
+  });
+
   test('should append issues to existing dataset issues', () => {
     const existingIssue: BaseIssue<unknown> = {
       ...baseInfo,

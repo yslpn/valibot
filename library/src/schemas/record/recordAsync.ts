@@ -174,7 +174,8 @@ export function recordAsync(
                 key: entryKey,
                 value: entryValue,
               },
-              keyDataset.issues
+              keyDataset.issues,
+              'replace'
             );
 
             // If necessary, abort early
