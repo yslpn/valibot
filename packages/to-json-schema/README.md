@@ -115,6 +115,8 @@ This package is particularly popular for:
 | `value`         | ⚠️     | Only JSON compatible values are supported                   |
 | `values`        | ⚠️     | Only JSON compatible values are supported                   |
 
+> For `length`, `minLength`, and `maxLength`, string constraints have different length semantics in Valibot and JSON Schema. Valibot checks JavaScript string length (`value.length`, UTF-16 code units), while JSON Schema `minLength` and `maxLength` count characters. This can differ for non-BMP characters such as emoji.
+
 ## Configurations
 
 | Option         | Type                                                                  | Note                                                                                                                      |
