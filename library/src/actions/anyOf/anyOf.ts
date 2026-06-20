@@ -12,7 +12,7 @@ import type {
   OutputDataset,
   UnionToIntersect,
 } from '../../types/index.ts';
-import { _addIssue, _joinExpects } from '../../utils/index.ts';
+import { _addIssue, _joinExpects, _subIssues } from '../../utils/index.ts';
 import type { ValueInput } from '../types.ts';
 
 type AnyOfGuardOption = GenericTransformation & { readonly type: 'guard' };
@@ -235,10 +235,6 @@ export function anyOf(
       readonly type?: unknown;
       readonly '~run'?: unknown;
     } | null;
-    const type =
-      action && typeof action === 'object' && typeof action.type === 'string'
-        ? ` of type "${action.type}"`
-        : '';
 
     if (
       !action ||
@@ -253,6 +249,8 @@ export function anyOf(
         (action.kind === 'transformation' && action.type === 'guard')
       )
     ) {
+      const type =
+        typeof action?.type === 'string' ? ` of type "${action.type}"` : '';
       throw new TypeError(
         `The any of option at index ${index}${type} must be a sync validation or guard action.`
       );
@@ -266,9 +264,7 @@ export function anyOf(
     type: 'any_of',
     reference: anyOf,
     expects: _joinExpects(
-      actionOptions.map((option) =>
-        'expects' in option && option.expects ? option.expects : option.type
-      ),
+      actionOptions.map((option) => option.expects || option.type),
       '|'
     ),
     async: false,
@@ -281,7 +277,7 @@ export function anyOf(
 
       const input = dataset.value;
       let typed = false;
-      let issues: [BaseIssue<unknown>, ...BaseIssue<unknown>[]] | undefined;
+      let datasets: OutputDataset<unknown, BaseIssue<unknown>>[] | undefined;
 
       for (const option of actionOptions) {
         const optionDataset = option['~run'](
@@ -298,13 +294,15 @@ export function anyOf(
         }
 
         if (optionDataset.issues) {
-          if (issues) {
-            issues.push(...optionDataset.issues);
+          if (datasets) {
+            datasets.push(optionDataset);
           } else {
-            issues = [...optionDataset.issues];
+            datasets = [optionDataset];
           }
         }
       }
+
+      const issues = _subIssues(datasets);
 
       if (!issues) {
         throw new TypeError(
@@ -314,10 +312,8 @@ export function anyOf(
 
       _addIssue(this, 'input', dataset, config, { issues });
 
-      if (!typed) {
-        // @ts-expect-error
-        dataset.typed = false;
-      }
+      // @ts-expect-error
+      dataset.typed = typed;
 
       return dataset as OutputDataset<
         InferAnyOfOutput<AnyOfOptions, unknown>,
