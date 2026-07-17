@@ -157,10 +157,11 @@ export interface AnyOfAction<
  *
  * The options (sync validations, guards, or transformations) are tried in
  * order and the first one that succeeds decides the result, returning its
- * output. Since a transformation always succeeds, place transformations last
- * so earlier validations and guards act as gates — an always-succeeding option
- * short-circuits the rest. If every option fails, the option issues are
- * collected as subissues of a single any of issue.
+ * output. Guards and other conditional transformations (e.g. `toNumber`) can
+ * still fail and contribute their issues like validations do — only
+ * transformations that always succeed (e.g. `trim`) are guaranteed to
+ * short-circuit the rest, so place those last. If every option fails, the
+ * option issues are collected as subissues of a single any of issue.
  *
  * @param options The any of options.
  *
