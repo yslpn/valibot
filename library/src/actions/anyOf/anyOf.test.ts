@@ -3,11 +3,14 @@ import type { StringIssue } from '../../schemas/index.ts';
 import type { BaseIssue, FailureDataset } from '../../types/index.ts';
 import { guard, type GuardIssue } from '../guard/index.ts';
 import {
+  brand,
   check,
   checkAsync,
   description,
   email,
+  flavor,
   minLength,
+  readonly,
   toNumber,
   trim,
   url,
@@ -156,6 +159,32 @@ describe('anyOf', () => {
         typed: true,
         value: 'foo',
       });
+    });
+
+    test('for explicitly typed readonly/brand/flavor fallback', () => {
+      // `readonly`/`brand`/`flavor` are no-ops at runtime regardless of their
+      // type argument, so this only confirms they still run correctly as
+      // options once the type-level restriction on bare calls is satisfied.
+      expect(
+        anyOf([email(), readonly<string>()])['~run'](
+          { typed: true, value: 'foo' },
+          {}
+        )
+      ).toStrictEqual({ typed: true, value: 'foo' });
+
+      expect(
+        anyOf([email(), brand<string, 'id'>('id')])['~run'](
+          { typed: true, value: 'foo' },
+          {}
+        )
+      ).toStrictEqual({ typed: true, value: 'foo' });
+
+      expect(
+        anyOf([email(), flavor<string, 'id'>('id')])['~run'](
+          { typed: true, value: 'foo' },
+          {}
+        )
+      ).toStrictEqual({ typed: true, value: 'foo' });
     });
 
     test('for a matching option, preserves issues already on the dataset', () => {

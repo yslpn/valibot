@@ -62,6 +62,33 @@ type ExtractAnyOfOption<TOptions extends AnyOfOptionsConstraint> = Extract<
 >;
 
 /**
+ * Extracts options whose input type could not be resolved.
+ *
+ * `readonly()`, `brand(...)` and `flavor(...)` take no other argument that
+ * ties their input to a concrete type, so calling them bare (e.g.
+ * `readonly()`) silently defaults their input to `unknown` instead of
+ * inferring it from context, corrupting the output union with a wrong type.
+ * Passing an explicit type argument (e.g. `readonly<string>()`) resolves the
+ * input normally and is unaffected by this check.
+ *
+ * The `0 extends 1 & TOption` guard rules out `any` first: without it, the
+ * structural check of `anyOf`'s own `reference` against `BaseValidation`'s
+ * `(...args: any[]) => ...` signature probes this type with `TOption = any`,
+ * and `any` short-circuits every later branch to `any` instead of `never`.
+ */
+type UnresolvedAnyOfOption<TOption> = 0 extends 1 & TOption
+  ? never
+  : TOption extends AnyOfOption
+    ? TOption extends { readonly type: 'readonly' | 'brand' | 'flavor' }
+      ? [InferInput<TOption>] extends [unknown]
+        ? [unknown] extends [InferInput<TOption>]
+          ? TOption
+          : never
+        : never
+      : never
+    : never;
+
+/**
  * Infers a single option's contribution to the output union. Value-preserving
  * validations contribute the shared (narrowed) input, whereas guards and
  * transforms contribute their own output type.
@@ -89,9 +116,11 @@ type InferAnyOfIssue<TOptions extends AnyOfOptionsConstraint> =
 type ValidAnyOfOptions<TOptions extends AnyOfOptionsConstraint> =
   IsNever<InferAnyOfInput<TOptions>> extends true
     ? never
-    : TOptions[number] extends AnyOfOption
-      ? unknown
-      : never;
+    : IsNever<UnresolvedAnyOfOption<TOptions[number]>> extends false
+      ? never
+      : TOptions[number] extends AnyOfOption
+        ? unknown
+        : never;
 
 /**
  * Any of issue interface.
@@ -162,6 +191,11 @@ export interface AnyOfAction<
  * transformations that always succeed (e.g. `trim`) are guaranteed to
  * short-circuit the rest, so place those last. If every option fails, the
  * option issues are collected as subissues of a single any of issue.
+ *
+ * `readonly()`, `brand(...)` and `flavor(...)` take no other argument that
+ * ties their input to a concrete type, so a bare call (e.g. `readonly()`) is
+ * rejected as an option — pass an explicit type argument instead, e.g.
+ * `readonly<string>()`.
  *
  * @param options The any of options.
  *

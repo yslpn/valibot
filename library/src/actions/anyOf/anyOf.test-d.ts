@@ -167,8 +167,22 @@ describe('anyOf', () => {
     anyOf([email(), toNumber()]);
     anyOf([email(), trim()]);
     anyOf([email(), transform((input: string) => input)]);
+    anyOf([email(), brand<string, 'id'>('id')]);
+    anyOf([email(), flavor<string, 'id'>('id')]);
+    anyOf([email(), readonly<string>()]);
+  });
+
+  test('should reject options with unresolved input', () => {
+    // `readonly()`/`brand(...)`/`flavor(...)` take no other argument that
+    // ties their input to a concrete type, so calling them bare silently
+    // defaults their input to `unknown` instead of inferring it from
+    // context, corrupting the output union. An explicit type argument (see
+    // "should accept transformation options" above) resolves this.
+    // @ts-expect-error
     anyOf([email(), brand('id')]);
+    // @ts-expect-error
     anyOf([email(), flavor('id')]);
+    // @ts-expect-error
     anyOf([email(), readonly()]);
   });
 
@@ -176,6 +190,12 @@ describe('anyOf', () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const schema = pipe(string(), anyOf([email(), toNumber()]));
     expectTypeOf<InferOutput<typeof schema>>().toEqualTypeOf<string | number>();
+  });
+
+  test('should correctly narrow input-dependent transforms when explicitly typed', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const schema = pipe(string(), anyOf([email(), readonly<string>()]));
+    expectTypeOf<InferOutput<typeof schema>>().toEqualTypeOf<string>();
   });
 
   test('should reject async and metadata actions', () => {
