@@ -7,6 +7,7 @@ import type {
   InferInput,
   InferIssue,
   InferOutput,
+  IsAny,
   IsNever,
   MaybeReadonly,
   OutputDataset,
@@ -32,6 +33,20 @@ interface RuntimeAnyOfOption {
   readonly type: string;
   readonly expects?: string | null;
   readonly '~run': GenericValidation<unknown>['~run'];
+}
+
+/**
+ * Shape of an option before it has passed the runtime validation loop below,
+ * used only to probe whether it looks like a sync validation or
+ * transformation action.
+ */
+interface UncheckedAnyOfOption {
+  readonly async?: unknown;
+  readonly kind?: unknown;
+  readonly expects?: unknown;
+  readonly reference?: unknown;
+  readonly type?: unknown;
+  readonly '~run'?: unknown;
 }
 
 /**
@@ -71,22 +86,21 @@ type ExtractAnyOfOption<TOptions extends AnyOfOptionsConstraint> = Extract<
  * Passing an explicit type argument (e.g. `readonly<string>()`) resolves the
  * input normally and is unaffected by this check.
  *
- * The `0 extends 1 & TOption` guard rules out `any` first: without it, the
- * structural check of `anyOf`'s own `reference` against `BaseValidation`'s
- * `(...args: any[]) => ...` signature probes this type with `TOption = any`,
- * and `any` short-circuits every later branch to `any` instead of `never`.
+ * The `IsAny` guard rules out `any` first: without it, the structural check of
+ * `anyOf`'s own `reference` against `BaseValidation`'s `(...args: any[]) =>
+ * ...` signature probes this type with `TOption = any`, and `any`
+ * short-circuits every later branch to `any` instead of `never`.
  */
-type UnresolvedAnyOfOption<TOption> = 0 extends 1 & TOption
-  ? never
-  : TOption extends AnyOfOption
-    ? TOption extends { readonly type: 'readonly' | 'brand' | 'flavor' }
-      ? [InferInput<TOption>] extends [unknown]
+type UnresolvedAnyOfOption<TOption> =
+  IsAny<TOption> extends true
+    ? never
+    : TOption extends AnyOfOption
+      ? TOption extends { readonly type: 'readonly' | 'brand' | 'flavor' }
         ? [unknown] extends [InferInput<TOption>]
           ? TOption
           : never
         : never
-      : never
-    : never;
+      : never;
 
 /**
  * Infers a single option's contribution to the output union. Value-preserving
@@ -242,14 +256,7 @@ export function anyOf(
   }
 
   for (let index = 0; index < options.length; index++) {
-    const action = options[index] as {
-      readonly async?: unknown;
-      readonly kind?: unknown;
-      readonly expects?: unknown;
-      readonly reference?: unknown;
-      readonly type?: unknown;
-      readonly '~run'?: unknown;
-    } | null;
+    const action = options[index] as UncheckedAnyOfOption | null;
 
     if (
       !action ||
@@ -314,11 +321,7 @@ export function anyOf(
         }
 
         if (optionDataset.issues) {
-          if (datasets) {
-            datasets.push(optionDataset);
-          } else {
-            datasets = [optionDataset];
-          }
+          (datasets ??= []).push(optionDataset);
         }
       }
 
